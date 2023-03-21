@@ -1,18 +1,28 @@
-import numpy.random
-from numba import jit, cuda
-from numba.experimental import jitclass
 import numpy as np
-import numba
-from numba import int32, float32, int16
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
+from matplotlib import animation
+import shutil
 import os
 import sys
+from datetime import datetime
 from config import DataAccessor
+import time
+import signal
+
+from simulation import Physarium
+
 
 class Renderer:
-    def __init__(self):
+    def __init__(self, simulation: Physarium):
 
+        signal.signal(signal.SIGINT, self.signal_handler)
+
+        self.output_dir = self.manage_output()
+
+        self.simulation = simulation
+
+    def simulate(self):
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
         plt.set_cmap('bone')
@@ -21,95 +31,72 @@ class Renderer:
         self.fps_val.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='black')])
         ax.text(0.15, 1.05, "FPS", transform=ax.transAxes, ha="center", fontsize=15)
         self.title = ax.text(1, 1.05, "", transform=ax.transAxes, ha="right")
-
         ani = animation.FuncAnimation(fig, self.update_image, interval=1)
         plt.show()
+
+    def update_image(self, i):
+        start = time.time()
+
+        #self.img = self.img.filter(ImageFilter.BoxBlur(config.DIS_BLUR))
+        #self.img = ImageEnhance.Brightness(self.img).enhance(1 - config.DIS_EVAP)
+
+        start = time.time()
+        self.particles += self.circular_distribution(config.SPAWN_RATE, self.center_pos, 10)
+        print(f"adding particles: {round(time.time() - start, 3)}s")
+
+        start = time.time()
+        for p in reversed(range(len(self.particles))):
+            if type(self.particles[p]) == Particle:
+                self.img.putpixel(self.particles[p].pos, 255)
+        self.frame = i
+        print(f"writing particles to image: {round(time.time() - start, 3)}s")
+
+        self.img.save(f'sim_{self.output_dir}/frame_{str(i).zfill(5)}.png')
+
+        start = time.time()
+        npimg = np.asarray(self.img)
+        for a, part in enumerate(self.particles):
+            if not type(part) == Particle:
+                continue
+            if not part.process_particle(npimg):
+                self.particles[a] = None
+
+        print(f"processing particles: {round(time.time() - start, 3)}s")
+
+        self.im.set_array(np.asarray(self.img))
+        fps = int(1.0 / (time.time() - start))
+        color = "white"
+        if fps < 10:
+            color = "red"
+        elif fps < 20:
+            color = "yellow"
+        elif fps >= 20:
+            color = "green"
+
+        self.fps_val.set_text(f"{fps}")
+        self.fps_val.set_color(color)
+        self.title.set_text(f"frame: {i}  |  cells count: {len(self.particles)}")
+        print(round(time.time() - start, 2))
+        print(f"frame: {i}  cells:{len(self.particles)}")
+
+    @staticmethod
+    def manage_output():
+        output_dir = datetime.now().strftime("%Y%m%d%H%M%S")
+        try:
+            shutil.rmtree(f'sim_{output_dir}')
+        except Exception:  # noqa
+            pass
+        try:
+            os.mkdir(f'sim_{output_dir}')
+        except Exception:  # noqa
+            pass
+        return output_dir
 
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         os.system(
             f"ffmpeg -framerate 30 -i sim_{self.output_dir}/frame_%05d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p sim_{self.output_dir}/sim.mp4")
         sys.exit(0)
-
-
-spec = [
-    ('simulation_resolution_x', int32),
-    ('simulation_resolution_y', int32),
-    ('initial_circle_radius', int32),
-    ('initial_cells_amount', int32),
-    ('cells_spawn_rate', int32),
-    ('trail_decay_factor', int32),
-    ('trail_evaporation_factor', int32),
-    ('sensors_distance', int32),
-    ('sensors_size', int32),
-    ('sensors_angle_span', int32),
-    ('movement_distance', int32),
-    ('movement_rotation', int32),
-    ('cells_array', numba.int32[:, :]),
-    ('matrix', numba.uint8[:, :]),
-]
-
-
-@jitclass(spec)
-class Physarium:
-    def __init__(self,
-                 simulation_resolution_x,
-                 simulation_resolution_y,
-                 initial_circle_radius,
-                 initial_cells_amount,
-                 cells_spawn_rate,
-                 trail_decay_factor,
-                 trail_evaporation_factor,
-                 sensors_distance,
-                 sensors_size,
-                 sensors_angle_span,
-                 movement_distance,
-                 movement_rotation
-                 ):
-        self.simulation_resolution_x = simulation_resolution_x
-        self.simulation_resolution_y = simulation_resolution_y
-
-        self.initial_circle_radius = initial_circle_radius
-        self.initial_cells_amount = initial_cells_amount
-        self.cells_spawn_rate = cells_spawn_rate
-        self.trail_decay_factor = trail_decay_factor
-        self.trail_evaporation_factor = trail_evaporation_factor
-
-        self.sensors_distance = sensors_distance
-        self.sensors_size = sensors_size
-        self.sensors_angle_span = sensors_angle_span
-        self.movement_distance = movement_distance
-        self.movement_rotation = movement_rotation
-
-        self.matrix = np.zeros(shape=(self.simulation_resolution_y, self.simulation_resolution_x), dtype=np.uint8)
-        self.cells_array = self.__generate_cells()
-
-        """
-        row 0 is cells x pos
-        row 1 is cells y pos
-        row 2 is cells rot
-        """
-
-
-
-
-    def update_matrix(self):
-        for i in range(len(self.cells_array[0])):
-            self.matrix[self.cells_array[0][i]][self.cells_array[0][i]] = 255
-    def __generate_cells(self):
-        cells = np.zeros(shape=(3, self.initial_cells_amount), dtype=np.int32)
-
-        theta = np.random.uniform(0, 2 * np.pi, self.initial_cells_amount)
-        radius = np.random.uniform(0, self.initial_circle_radius, self.initial_cells_amount)
-        x = radius * np.cos(theta) + (self.simulation_resolution_x / 2)
-        y = radius * np.sin(theta) + (self.simulation_resolution_y / 2)
-        cells[0] = x
-        cells[1] = y
-        for i in range(len(cells[2])):
-            cells[2][i] = np.round(numpy.random.rand() * 360)
-        return cells
-
-
 
 
 def load_class(__data_accessor):
@@ -147,5 +134,8 @@ def load_class(__data_accessor):
 if __name__ == "__main__":
     data_accessor = DataAccessor('config.json')
     physarum = load_class(data_accessor)
+    physarum.iterate()
+    #renderer = Renderer(physarum)
+    #renderer.simulate()
 
     print(physarum.cells_array)
