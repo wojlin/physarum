@@ -1,0 +1,23 @@
+{
+  "render_settings":
+  {
+    "simulation_resolution_x": {"value":  1000, "unit": "px", "type":  "int"},
+    "simulation_resolution_y": {"value":  1000, "unit": "px", "type":  "int"}
+  },
+  "initial_conditions":
+  {
+    "initial_circle_radius":  {"value":  10, "unit": "px", "type":  "int"},
+    "initial_cells_amount":  {"value":  10, "unit": "cells", "type":  "int"},
+    "cells_spawn_rate":  {"value":  10, "unit": "cells per second", "type":  "int"},
+    "trail_decay_factor": {"value":  0.02, "unit": "value per second", "type":  "int"},
+    "trail_evaporation_factor": {"value":  0.02, "unit": "value per second", "type":  "int"}
+  },
+  "cell_settings":
+  {
+    "sensors_distance": {"value":  6, "unit": "cells", "type":  "int"},
+    "sensors_size": {"value":  4, "unit": "cells", "type":  "int"},
+    "sensors_angle_span":  {"value":  20, "unit": "degrees", "type":  "int"},
+    "movement_distance": {"value":  1, "unit": "cells", "type":  "int"},
+    "movement_rotation": {"value":  20, "unit": "degrees", "type":  "int"}
+  }
+}
