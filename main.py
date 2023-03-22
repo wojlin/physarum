@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 from matplotlib import animation
@@ -18,66 +17,43 @@ class Renderer:
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.output_dir = self.manage_output()
+        #self.output_dir = self.manage_output()
 
         self.simulation = simulation
 
+        self.im = None
+
     def simulate(self):
         fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        plt.set_cmap('bone')
-        self.im = ax.imshow(data, animated=True)
-        self.fps_val = ax.text(0.05, 1.05, "", transform=ax.transAxes, ha="center", fontsize=15)
+        self.ax = fig.add_subplot(1, 1, 1)
+        self.im = self.ax.imshow(self.simulation.get_matrix(), animated=True, interpolation='nearest', cmap="bone")
+        self.fps_val = self.ax.text(0.05, 1.05, "", transform=self.ax.transAxes, ha="center", fontsize=15)
         self.fps_val.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='black')])
-        ax.text(0.15, 1.05, "FPS", transform=ax.transAxes, ha="center", fontsize=15)
-        self.title = ax.text(1, 1.05, "", transform=ax.transAxes, ha="right")
+        self.ax.text(0.15, 1.05, "FPS", transform=self.ax.transAxes, ha="center", fontsize=15)
+        self.title = self.ax.text(1, 1.05, "", transform=self.ax.transAxes, ha="right")
         ani = animation.FuncAnimation(fig, self.update_image, interval=1)
         plt.show()
 
     def update_image(self, i):
         start = time.time()
+        self.simulation.iterate()
+        print(f"{round(time.time() - start, 2)}s")
+        self.im.set_array(self.simulation.get_matrix())
+        #self.img.save(f'sim_{self.output_dir}/frame_{str(i).zfill(5)}.png')
 
-        #self.img = self.img.filter(ImageFilter.BoxBlur(config.DIS_BLUR))
-        #self.img = ImageEnhance.Brightness(self.img).enhance(1 - config.DIS_EVAP)
-
-        start = time.time()
-        self.particles += self.circular_distribution(config.SPAWN_RATE, self.center_pos, 10)
-        print(f"adding particles: {round(time.time() - start, 3)}s")
-
-        start = time.time()
-        for p in reversed(range(len(self.particles))):
-            if type(self.particles[p]) == Particle:
-                self.img.putpixel(self.particles[p].pos, 255)
-        self.frame = i
-        print(f"writing particles to image: {round(time.time() - start, 3)}s")
-
-        self.img.save(f'sim_{self.output_dir}/frame_{str(i).zfill(5)}.png')
-
-        start = time.time()
-        npimg = np.asarray(self.img)
-        for a, part in enumerate(self.particles):
-            if not type(part) == Particle:
-                continue
-            if not part.process_particle(npimg):
-                self.particles[a] = None
-
-        print(f"processing particles: {round(time.time() - start, 3)}s")
-
-        self.im.set_array(np.asarray(self.img))
         fps = int(1.0 / (time.time() - start))
-        color = "white"
+
         if fps < 10:
             color = "red"
-        elif fps < 20:
+        elif fps < 30:
             color = "yellow"
-        elif fps >= 20:
+        else:
             color = "green"
 
         self.fps_val.set_text(f"{fps}")
         self.fps_val.set_color(color)
-        self.title.set_text(f"frame: {i}  |  cells count: {len(self.particles)}")
-        print(round(time.time() - start, 2))
-        print(f"frame: {i}  cells:{len(self.particles)}")
+        self.title.set_text(f"frame: {i}  |  cells count: {self.simulation.get_cells_amount()}")
+        print(f"frame: {i}  cells:{self.simulation.get_cells_amount()}")
 
     @staticmethod
     def manage_output():
@@ -134,8 +110,6 @@ def load_class(__data_accessor):
 if __name__ == "__main__":
     data_accessor = DataAccessor('config.json')
     physarum = load_class(data_accessor)
-    physarum.iterate()
-    #renderer = Renderer(physarum)
-    #renderer.simulate()
+    renderer = Renderer(physarum)
+    renderer.simulate()
 
-    print(physarum.cells_array)

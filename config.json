@@ -7,17 +7,17 @@
   "initial_conditions":
   {
     "initial_circle_radius":  {"value":  10, "unit": "px", "type":  "int"},
-    "initial_cells_amount":  {"value":  10, "unit": "cells", "type":  "int"},
-    "cells_spawn_rate":  {"value":  10, "unit": "cells per second", "type":  "int"},
-    "trail_decay_factor": {"value":  0.02, "unit": "value per second", "type":  "int"},
-    "trail_evaporation_factor": {"value":  0.02, "unit": "value per second", "type":  "int"}
+    "initial_cells_amount":  {"value":  20000, "unit": "cells", "type":  "int"},
+    "cells_spawn_rate":  {"value":  100, "unit": "cells per iteration", "type":  "int"},
+    "trail_decay_factor": {"value": 3, "unit": "value per iteration", "type":  "int"},
+    "trail_evaporation_factor": {"value":  7, "unit": "value per iteration", "type":  "int"}
   },
   "cell_settings":
   {
-    "sensors_distance": {"value":  6, "unit": "cells", "type":  "int"},
-    "sensors_size": {"value":  4, "unit": "cells", "type":  "int"},
-    "sensors_angle_span":  {"value":  20, "unit": "degrees", "type":  "int"},
-    "movement_distance": {"value":  2, "unit": "cells", "type":  "int"},
-    "movement_rotation": {"value":  20, "unit": "degrees", "type":  "int"}
+    "sensors_distance": {"value":  3, "unit": "cells", "type":  "int"},
+    "sensors_size": {"value":  1, "unit": "cells", "type":  "int"},
+    "sensors_angle_span":  {"value":  30, "unit": "degrees", "type":  "int"},
+    "movement_distance": {"value":  1, "unit": "cells", "type":  "int"},
+    "movement_rotation": {"value":  15, "unit": "degrees", "type":  "int"}
   }
 }
