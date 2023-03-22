@@ -164,13 +164,14 @@ class Physarium:
 
     def __calculate_sensors_values(self, pos_x: int, pos_y: int, rot: int):
         sensors_values = [0, 0, 0]
+        offset = int(self.__sensors_size/2)
         for sensor in range(3):
             alpha = np.deg2rad(270 - rot - (self.__sensors_angle_span * (sensor - 1)))
             sensor_pos_x = pos_x + int(self.__sensors_distance * np.cos(alpha))
             sensor_pos_y = pos_y + int(self.__sensors_distance * np.sin(alpha))
             for x in range(self.__sensors_size):
                 for y in range(self.__sensors_size):
-                    sensors_values[sensor] += self.__matrix[sensor_pos_y + y][sensor_pos_x + x]
+                    sensors_values[sensor] += self.__matrix[sensor_pos_y + y - offset][sensor_pos_x + x - offset]
         return sensors_values
 
     def __update_matrix(self):
