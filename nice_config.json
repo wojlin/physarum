@@ -1,21 +1,16 @@
 {
-  "program_settings":
-  {
-    "save": {"value":  true},
-    "fps": {"value":  60}
-  },
   "render_settings":
   {
-    "simulation_resolution_x": {"value":  1000, "unit": "px", "type":  "int"},
-    "simulation_resolution_y": {"value":  1000, "unit": "px", "type":  "int"}
+    "simulation_resolution_x": {"value":  700, "unit": "px", "type":  "int"},
+    "simulation_resolution_y": {"value":  700, "unit": "px", "type":  "int"}
   },
   "initial_conditions":
   {
     "initial_circle_radius":  {"value":  30, "unit": "px", "type":  "int"},
-    "initial_cells_amount":  {"value":  1000, "unit": "cells", "type":  "int"},
-    "cells_spawn_rate":  {"value":  10, "unit": "cells per iteration", "type":  "int"},
+    "initial_cells_amount":  {"value":  50000, "unit": "cells", "type":  "int"},
+    "cells_spawn_rate":  {"value":  100, "unit": "cells per iteration", "type":  "int"},
     "trail_decay_factor": {"value": 3, "unit": "value per iteration", "type":  "int"},
-    "trail_evaporation_factor": {"value": 5, "unit": "value per iteration", "type":  "int"}
+    "trail_evaporation_factor": {"value": 15, "unit": "value per iteration", "type":  "int"}
   },
   "cell_settings":
   {

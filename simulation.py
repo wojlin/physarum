@@ -133,12 +133,19 @@ class Physarium:
         self.__matrix = result.astype(np.uint8)
 
     def __evaporate_cells(self):
-        for y in range(self.__simulation_resolution_y):
+        for y in numba.prange(self.__simulation_resolution_y):
             for x in range(self.__simulation_resolution_x):
                 if self.__matrix[y][x] > self.__trail_evaporation_factor:
                     self.__matrix[y][x] = self.__matrix[y][x] - self.__trail_evaporation_factor
                 else:
                     self.__matrix[y][x] = 0
+
+        """for y in range(self.__simulation_resolution_y):
+            for x in range(self.__simulation_resolution_x):
+                if self.__matrix[y][x] > self.__trail_evaporation_factor:
+                    self.__matrix[y][x] = self.__matrix[y][x] - self.__trail_evaporation_factor
+                else:
+                    self.__matrix[y][x] = 0"""
 
     def __update_cell_params(self, i, pos_x, pos_y, rot):
         self.__cells_array[0][i] = pos_x

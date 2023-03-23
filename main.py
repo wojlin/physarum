@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import datetime
 from config import DataAccessor
+from PIL import Image
 import time
 import signal
 
@@ -13,11 +14,14 @@ from simulation import Physarium
 
 
 class Renderer:
-    def __init__(self, simulation: Physarium):
+    def __init__(self, simulation: Physarium, data_accessor: DataAccessor):
 
         signal.signal(signal.SIGINT, self.signal_handler)
+        self.save = save = data_accessor.get_parameter("program_settings", "save")
+        if self.save:
+            self.output_dir = self.manage_output()
 
-        #self.output_dir = self.manage_output()
+        self.fps = data_accessor.get_parameter("program_settings", "fps")
 
         self.simulation = simulation
 
@@ -39,7 +43,10 @@ class Renderer:
         self.simulation.iterate()
         print(f"{round(time.time() - start, 2)}s")
         self.im.set_array(self.simulation.get_matrix())
-        #self.img.save(f'sim_{self.output_dir}/frame_{str(i).zfill(5)}.png')
+
+        if self.save:
+            im = Image.fromarray(self.simulation.get_matrix())
+            im.save(f'sim_{self.output_dir}/frame_{str(i).zfill(5)}.png')
 
         fps = int(1.0 / (time.time() - start))
 
@@ -71,7 +78,7 @@ class Renderer:
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         os.system(
-            f"ffmpeg -framerate 30 -i sim_{self.output_dir}/frame_%05d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p sim_{self.output_dir}/sim.mp4")
+            f"ffmpeg -framerate {self.fps} -i sim_{self.output_dir}/frame_%05d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p sim_{self.output_dir}/sim.mp4")
         sys.exit(0)
 
 
@@ -110,6 +117,6 @@ def load_class(__data_accessor):
 if __name__ == "__main__":
     data_accessor = DataAccessor('config.json')
     physarum = load_class(data_accessor)
-    renderer = Renderer(physarum)
+    renderer = Renderer(physarum, data_accessor)
     renderer.simulate()
 
