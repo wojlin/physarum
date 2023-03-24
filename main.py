@@ -10,18 +10,19 @@ from PIL import Image
 import time
 import signal
 
-from simulation import Physarium
-
+from simulation_cpu import Physarum as Physarum_CPU
+from simulation_gpu import Physarum as Physarum_GPU
+from interfaces import Physarum
 
 class Renderer:
-    def __init__(self, simulation: Physarium, data_accessor: DataAccessor):
+    def __init__(self, simulation: Physarum, data_accessor: DataAccessor):
 
         signal.signal(signal.SIGINT, self.signal_handler)
-        self.save = save = data_accessor.get_parameter("program_settings", "save")
+        self.save = save = data_accessor.get_parameter("program_settings", "save_to_disk")
         if self.save:
             self.output_dir = self.manage_output()
 
-        self.fps = data_accessor.get_parameter("program_settings", "fps")
+        self.fps = data_accessor.get_parameter("program_settings", "record_fps")
 
         self.simulation = simulation
 
@@ -98,19 +99,36 @@ def load_class(__data_accessor):
     __movement_distance = data_accessor.get_parameter("cell_settings", "movement_distance")
     __movement_rotation = data_accessor.get_parameter("cell_settings", "movement_rotation")
 
-    __physarum = Physarium(__simulation_resolution_x,
-                           __simulation_resolution_y,
-                           __initial_circle_radius,
-                           __initial_cells_amount,
-                           __cells_spawn_rate,
-                           __trail_decay_factor,
-                           __trail_evaporation_factor,
-                           __sensors_distance,
-                           __sensors_size,
-                           __sensors_angle_span,
-                           __movement_distance,
-                           __movement_rotation
-                           )
+    __sim_type = data_accessor.get_parameter("program_settings", "simulation_type")
+    if __sim_type == "cpu":
+        __physarum = Physarum_CPU(__simulation_resolution_x,
+                               __simulation_resolution_y,
+                               __initial_circle_radius,
+                               __initial_cells_amount,
+                               __cells_spawn_rate,
+                               __trail_decay_factor,
+                               __trail_evaporation_factor,
+                               __sensors_distance,
+                               __sensors_size,
+                               __sensors_angle_span,
+                               __movement_distance,
+                               __movement_rotation
+                               )
+    else:
+        __physarum = Physarum_GPU(__simulation_resolution_x,
+                                  __simulation_resolution_y,
+                                  __initial_circle_radius,
+                                  __initial_cells_amount,
+                                  __cells_spawn_rate,
+                                  __trail_decay_factor,
+                                  __trail_evaporation_factor,
+                                  __sensors_distance,
+                                  __sensors_size,
+                                  __sensors_angle_span,
+                                  __movement_distance,
+                                  __movement_rotation
+                                  )
+
     return __physarum
 
 

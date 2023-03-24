@@ -1,8 +1,9 @@
 {
   "program_settings":
   {
-    "save": {"value":  true},
-    "fps": {"value":  60}
+    "save_to_disk": {"value":  false},
+    "record_fps": {"value":  60},
+    "simulation_type": {"value": "gpu", "comment": "gpu/cpu"}
   },
   "render_settings":
   {

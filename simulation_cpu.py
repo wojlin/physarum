@@ -1,4 +1,5 @@
 from numba.experimental import jitclass
+import interfaces
 from numba import int32
 import numpy.random
 import numpy as np
@@ -25,7 +26,7 @@ spec = [
 
 
 @jitclass(spec)
-class Physarium:
+class Physarum(interfaces.Physarum):
     def __init__(self,
                  simulation_resolution_x: int,
                  simulation_resolution_y: int,
