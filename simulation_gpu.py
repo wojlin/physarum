@@ -39,6 +39,9 @@ class Physarum(interfaces.Physarum):
 
         self.__cells_amount = 0
         self.__matrix = np.zeros(shape=(self.__simulation_resolution_y, self.__simulation_resolution_x), dtype=np.uint8)
+
+        self.__gpu = cuda.jit(restype=numba.uint32, argtypes=[])
+
         self.__cells_array, self.__cells_amount = self.__generate_cells(self.__cells_amount,
                                                                         self.__cells_spawn_rate,
                                                                         self.__simulation_resolution_x,
@@ -117,7 +120,7 @@ class Physarum(interfaces.Physarum):
 
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(device= True, target_backend='cuda', nopython=True)
     def __check_bounds(pos_x, pos_y, sim_res_x, sim_res_y, sensor_dis):
         if pos_x >= sim_res_x - sensor_dis:
             return False
@@ -131,7 +134,7 @@ class Physarum(interfaces.Physarum):
             return True
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __apply_gaussian_filter(matrix, sim_res_x, sim_res_y, decay):
         neighborhood_size = decay
         result = np.zeros_like(matrix, dtype=np.int32)
@@ -168,7 +171,7 @@ class Physarum(interfaces.Physarum):
         #matrix = result.astype(np.uint8)
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __evaporate_cells(matrix, sim_res_x, sim_res_y, evaporation):
         for y in numba.prange(sim_res_x):
             for x in range(sim_res_y):
@@ -178,7 +181,7 @@ class Physarum(interfaces.Physarum):
                     matrix[y][x] = 0
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __update_cell_params(cells, i, pos_x, pos_y, rot):
         cells[0][i] = pos_x
         cells[1][i] = pos_y
@@ -186,7 +189,7 @@ class Physarum(interfaces.Physarum):
         return cells
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __calculate_cell_pos(pos_x, pos_y, rot, movement_distance):
         alpha = np.deg2rad(270 - rot)
         pos_x = int(pos_x + round(np.cos(alpha)) * movement_distance)
@@ -194,7 +197,7 @@ class Physarum(interfaces.Physarum):
         return pos_x, pos_y
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __calculate_rotation_angle(angle, sensors_values, movement_rotation):
         multiply = np.random.rand()
         if sensors_values[0] == sensors_values[1] == sensors_values[2]:
@@ -206,7 +209,7 @@ class Physarum(interfaces.Physarum):
         return angle
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __calculate_sensors_values(matrix, pos_x: int, pos_y: int, rot: int, sensor_size, s_angle, s_dis):
         sensors_values = [0, 0, 0]
         offset = int(sensor_size / 2)
@@ -220,16 +223,16 @@ class Physarum(interfaces.Physarum):
         return sensors_values
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(target_backend='cuda', nopython=True)
     def __update_matrix(matrix, cells):
         for i in range(len(cells[0])):
             matrix[cells[1][i]][cells[0][i]] = 255
 
 
     @staticmethod
-    @numba.jit(target_backend='cuda', nopython=True)
+    @numba.cuda.jit(device=True)
     def __generate_cells(cells_amount, amount, sim_res_x, sim_res_y, circle_radius):
-        cells = np.zeros(shape=(3, amount), dtype=np.int32)
+        cells = numba.cuda.device_array((3, amount), dtype=numba.int32)
 
         theta = np.random.uniform(0, 2 * np.pi, amount)
         radius = np.random.uniform(0, circle_radius, amount)

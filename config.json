@@ -3,7 +3,7 @@
   {
     "save_to_disk": {"value":  false},
     "record_fps": {"value":  60},
-    "simulation_type": {"value": "gpu", "comment": "gpu/cpu"}
+    "simulation_type": {"value": "cpu", "comment": "gpu/cpu"}
   },
   "render_settings":
   {
