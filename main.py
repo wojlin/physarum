@@ -11,6 +11,9 @@ from PIL import Image
 import time
 import signal
 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib as mpl
 from simulation_cpu import Physarum as Physarum_CPU
 from simulation_gpu import Physarum as Physarum_GPU
 from interfaces import Physarum
@@ -32,10 +35,52 @@ class Renderer:
         self.im = None
 
     def simulate(self):
-        fig = plt.figure(figsize=(15, 8))
+
+        __low_threshold = data_accessor.get_parameter("color_settings", "low_threshold")
+        __high_threshold = data_accessor.get_parameter("color_settings", "high_threshold")
+
+        __low_red = data_accessor.get_parameter("color_settings", "low_red")
+        __low_green = data_accessor.get_parameter("color_settings", "low_green")
+        __low_blue = data_accessor.get_parameter("color_settings", "low_blue")
+
+        __high_red = data_accessor.get_parameter("color_settings", "high_red")
+        __high_green = data_accessor.get_parameter("color_settings", "high_green")
+        __high_blue = data_accessor.get_parameter("color_settings", "high_blue")
+
+        __low_threshold = __low_threshold / 100
+        __high_threshold = __high_threshold / 100
+
+        color_dict = {
+            'red': (
+                (0.0,  0.0, 0.0),
+                (__low_threshold,  0.0, 0.0),
+                (__high_threshold,  1.0, 1.0),
+                (1, 1.0, 1.0),
+            ),
+            'green': (
+                (0.0,  0.0, 0.0),
+                (__low_threshold,  0.0, 0.0),
+                (__high_threshold,  1.0, 1.0),
+                (1, 1.0, 1.0)
+            ),
+            'blue': (
+                (0.0,  0.0, 0.0),
+                (__low_threshold,  0.0, 0.0),
+                (__high_threshold,  1.0, 1.0),
+                (1, 1.0, 1.0)
+            )
+        }
+
+        color_map = LinearSegmentedColormap("custom", color_dict)
+        mpl.colormaps.register(color_map)
+
+        fig = plt.figure(num="physarum simulation", figsize=(15, 8))
         self.ax = fig.add_subplot(1, 1, 1)
         plt.subplots_adjust(left=0.5, right=0.9, top=0.9, bottom=0.1)
-        self.im = self.ax.imshow(self.simulation.get_matrix(), animated=True, interpolation='nearest', cmap="bone")
+        self.im = self.ax.imshow(self.simulation.get_matrix(), animated=True, interpolation='nearest', cmap="custom")
+        divider = make_axes_locatable(self.ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(self.im, cax=cax, orientation="vertical")
         self.fps_val = self.ax.text(0.05, 1.05, "", transform=self.ax.transAxes, ha="center", fontsize=15)
         self.fps_val.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='black')])
         self.ax.text(0.15, 1.05, "FPS", transform=self.ax.transAxes, ha="center", fontsize=15)
@@ -113,9 +158,9 @@ class Renderer:
             ax=axfreq,
             label='cells spawn rate: ',
             valmin=0,
-            valmax=100000,
+            valmax=1000,
             valinit=__cells_spawn_rate,
-            valstep=1000
+            valstep=10
         )
         self.cells_spawn_rate_slider.on_changed(self.update)
 
@@ -238,9 +283,6 @@ class Renderer:
             im.save(f'sim_{self.output_dir}/frame_{str(self.current_iter).zfill(5)}.png')
 
         fps = int(1.0 / (time.time() - start))
-
-        #if i == 100:
-        #    self.set_parameter("movement_distance", 5)
 
         if fps < 10:
             color = "red"
