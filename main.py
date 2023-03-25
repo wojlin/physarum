@@ -34,6 +34,72 @@ class Renderer:
 
         self.im = None
 
+    def __cmap(self, __low_threshold,
+               __high_threshold,
+               __low_red,
+               __low_green,
+               __low_blue,
+               __high_red,
+               __high_green,
+               __high_blue):
+
+        __low_threshold = __low_threshold / 100
+        __high_threshold = __high_threshold / 100
+
+        __low_red = __low_red / 100
+        __low_green = __low_green / 100
+        __low_blue = __low_blue / 100
+
+        __high_red = __high_red / 100
+        __high_green = __high_green / 100
+        __high_blue = __high_blue / 100
+
+        _low_threshold = __high_threshold - 1 if __low_threshold >= __high_threshold else __low_threshold
+        __high_threshold = __low_threshold + 1 if __high_threshold <= __low_threshold else __high_threshold
+
+        __low_red = __high_red - 1 if __low_red >= __high_red else __low_red
+        __low_green = __high_green - 1 if __low_green >= __high_green else __low_green
+        __low_blue = __high_blue - 1 if __low_blue >= __high_blue else __low_blue
+
+        __high_red = __low_red + 1 if __high_red <= __low_red else __high_red
+        __high_green = __low_green + 1 if __high_green <= __low_green else __high_green
+        __high_blue = __low_blue + 1 if __high_blue <= __low_blue else __high_blue
+
+
+        __red_jump = (__high_threshold - __low_threshold) / (__high_red - __low_red)
+        __green_jump = (__high_threshold - __low_threshold) / (__high_green - __low_green)
+        __blue_jump = (__high_threshold - __low_threshold) / (__high_blue - __low_blue)
+
+
+        color_dict = {
+            'red': (
+                (0.0, 0.0, 0.0),
+                (__low_threshold, 0, 0),
+                (__low_threshold, 0, 0),
+                (__high_threshold, __red_jump, __red_jump),
+                (1, __red_jump, __red_jump),
+            ),
+            'green': (
+                (0.0, 0.0, 0.0),
+                (__low_threshold, 0, 0),
+                (__low_threshold, 0, 0),
+                (__high_threshold, __green_jump, __green_jump),
+                (1, __green_jump, __green_jump),
+            ),
+            'blue': (
+                (0.0, 0.0, 0.0),
+                (__low_threshold, 0, 0),
+                (__low_threshold, 0, 0),
+                (__high_threshold, __blue_jump, __blue_jump),
+                (1, __blue_jump, __blue_jump),
+            )
+        }
+
+        color_map = LinearSegmentedColormap("custom", color_dict)
+        mpl.colormaps.unregister("custom")
+        mpl.colormaps.register(color_map)
+
+
     def simulate(self):
 
         __low_threshold = data_accessor.get_parameter("color_settings", "low_threshold")
@@ -47,32 +113,7 @@ class Renderer:
         __high_green = data_accessor.get_parameter("color_settings", "high_green")
         __high_blue = data_accessor.get_parameter("color_settings", "high_blue")
 
-        __low_threshold = __low_threshold / 100
-        __high_threshold = __high_threshold / 100
-
-        color_dict = {
-            'red': (
-                (0.0,  0.0, 0.0),
-                (__low_threshold,  0.0, 0.0),
-                (__high_threshold,  1.0, 1.0),
-                (1, 1.0, 1.0),
-            ),
-            'green': (
-                (0.0,  0.0, 0.0),
-                (__low_threshold,  0.0, 0.0),
-                (__high_threshold,  1.0, 1.0),
-                (1, 1.0, 1.0)
-            ),
-            'blue': (
-                (0.0,  0.0, 0.0),
-                (__low_threshold,  0.0, 0.0),
-                (__high_threshold,  1.0, 1.0),
-                (1, 1.0, 1.0)
-            )
-        }
-
-        color_map = LinearSegmentedColormap("custom", color_dict)
-        mpl.colormaps.register(color_map)
+        self.__cmap(__low_threshold, __high_threshold, __low_red, __low_green, __low_blue, __high_red, __high_green, __high_blue)
 
         fig = plt.figure(num="physarum simulation", figsize=(15, 8))
         self.ax = fig.add_subplot(1, 1, 1)
@@ -101,13 +142,107 @@ class Renderer:
         __movement_distance = data_accessor.get_parameter("cell_settings", "movement_distance")
         __movement_rotation = data_accessor.get_parameter("cell_settings", "movement_rotation")
 
+
+        height = 0.04
+
         axes = plt.axes([0.2, 0.85, 0.15, 0.05])
         bnext = Button(axes, 'reset sim', color="red")
         bnext.on_clicked(self.restart)
 
-        plt.figtext(0.2, 0.8, "render settings:")
+        plt.figtext(0.2, 0.72, "color settings:")
 
-        axfreq = fig.add_axes([0.2, 0.75, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.675, 0.15, height])
+        self.low_threshold_slider = Slider(
+            ax=axfreq,
+            label='low threshold: ',
+            valmin=0,
+            valmax=100,
+            valinit=__low_threshold,
+            valstep=1
+        )
+        self.low_threshold_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.65, 0.15, height])
+        self.high_threshold_slider = Slider(
+            ax=axfreq,
+            label='high threshold: ',
+            valmin=0,
+            valmax=100,
+            valinit=__high_threshold,
+            valstep=1
+        )
+        self.high_threshold_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.625, 0.15, height])
+        self.low_red_slider = Slider(
+            ax=axfreq,
+            label='low red color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__low_red,
+            valstep=1
+        )
+        self.low_red_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.6, 0.15, height])
+        self.low_green_slider = Slider(
+            ax=axfreq,
+            label='low green color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__low_green,
+            valstep=1
+        )
+        self.low_green_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.575, 0.15, height])
+        self.low_blue_slider = Slider(
+            ax=axfreq,
+            label='low blue color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__low_blue,
+            valstep=1
+        )
+        self.low_blue_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.55, 0.15, height])
+        self.high_red_slider = Slider(
+            ax=axfreq,
+            label='high red color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__high_red,
+            valstep=1
+        )
+        self.high_red_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.525, 0.15, height])
+        self.high_green_slider = Slider(
+            ax=axfreq,
+            label='high green color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__high_green,
+            valstep=1
+        )
+        self.high_green_slider.on_changed(self.update_colormap)
+
+        axfreq = fig.add_axes([0.2, 0.5, 0.15, height])
+        self.high_blue_slider = Slider(
+            ax=axfreq,
+            label='high blue color: ',
+            valmin=0,
+            valmax=255,
+            valinit=__high_blue,
+            valstep=1
+        )
+        self.high_blue_slider.on_changed(self.update_colormap)
+
+
+        plt.figtext(0.2, 0.46, "render settings:")
+
+        axfreq = fig.add_axes([0.2, 0.425, 0.15, height])
         self.simulation_resolution_x_slider = Slider(
             ax=axfreq,
             label='simulation resolution x: ',
@@ -118,7 +253,7 @@ class Renderer:
         )
         self.simulation_resolution_x_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.7, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.4, 0.15, height])
         self.simulation_resolution_y_slider = Slider(
             ax=axfreq,
             label='simulation resolution y: ',
@@ -129,9 +264,9 @@ class Renderer:
         )
         self.simulation_resolution_y_slider.on_changed(self.update)
 
-        plt.figtext(0.2, 0.65, "initial conditions:")
+        plt.figtext(0.2, 0.39, "initial conditions:")
 
-        axfreq = fig.add_axes([0.2, 0.6, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.35, 0.15, height])
         self.initial_circle_radius_slider = Slider(
             ax=axfreq,
             label='initial circle radius: ',
@@ -142,7 +277,7 @@ class Renderer:
         )
         self.initial_circle_radius_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.55, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.325, 0.15, height])
         self.initial_cells_amount_slider = Slider(
             ax=axfreq,
             label='initial cells amount: ',
@@ -153,7 +288,7 @@ class Renderer:
         )
         self.initial_cells_amount_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.5, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.3, 0.15, height])
         self.cells_spawn_rate_slider = Slider(
             ax=axfreq,
             label='cells spawn rate: ',
@@ -164,7 +299,7 @@ class Renderer:
         )
         self.cells_spawn_rate_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.45, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.275, 0.15, height])
         self.trail_decay_factor_slider = Slider(
             ax=axfreq,
             label='trail decay factor: ',
@@ -175,7 +310,7 @@ class Renderer:
         )
         self.trail_decay_factor_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.4, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.25, 0.15, height])
         self.trail_evaporation_factor_slider = Slider(
             ax=axfreq,
             label='trail evaporation factor: ',
@@ -186,9 +321,9 @@ class Renderer:
         )
         self.trail_evaporation_factor_slider.on_changed(self.update)
 
-        plt.figtext(0.2, 0.35, "cell settings:")
+        plt.figtext(0.2, 0.24, "cell settings:")
 
-        axfreq = fig.add_axes([0.2, 0.3, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.2, 0.15, height])
         self.sensors_distance_slider = Slider(
             ax=axfreq,
             label='sensors distance: ',
@@ -199,7 +334,7 @@ class Renderer:
         )
         self.sensors_distance_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.25, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.175, 0.15, height])
         self.sensors_size_slider = Slider(
             ax=axfreq,
             label='sensors size: ',
@@ -210,7 +345,7 @@ class Renderer:
         )
         self.sensors_size_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.2, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.15, 0.15, height])
         self.sensors_angle_span_slider = Slider(
             ax=axfreq,
             label='sensors angle span: ',
@@ -221,7 +356,7 @@ class Renderer:
         )
         self.sensors_angle_span_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.15, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.125, 0.15, height])
         self.movement_distance_slider = Slider(
             ax=axfreq,
             label='movement distance: ',
@@ -232,7 +367,7 @@ class Renderer:
         )
         self.movement_distance_slider.on_changed(self.update)
 
-        axfreq = fig.add_axes([0.2, 0.1, 0.15, 0.05])
+        axfreq = fig.add_axes([0.2, 0.1, 0.15, height])
         self.movement_rotation_slider = Slider(
             ax=axfreq,
             label='movement rotation: ',
@@ -250,6 +385,23 @@ class Renderer:
 
     def restart(self, *args, **kwargs):
         self.simulation.restart()
+
+
+    def update_colormap(self, val):
+        __low_threshold = self.low_threshold_slider.val
+        __high_threshold = self.high_threshold_slider.val
+        __low_red = self.low_red_slider.val
+        __low_green = self.low_green_slider.val
+        __low_blue = self.low_blue_slider.val
+        __high_red = self.high_red_slider.val
+        __high_green = self.high_green_slider.val
+        __high_blue = self.high_blue_slider.val
+
+        self.__cmap(__low_threshold, __high_threshold, __low_red, __low_green, __low_blue, __high_red, __high_green,
+                    __high_blue)
+
+        self.im.set_cmap("custom")
+
     def update(self, val):
 
         self.set_parameter("simulation_resolution_x", int(self.simulation_resolution_x_slider.val))

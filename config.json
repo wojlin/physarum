@@ -30,10 +30,10 @@
   {
     "low_threshold": {"value":  10, "unit": "%", "type":  "int"},
     "high_threshold": {"value":  90, "unit": "%", "type":  "int"},
-    "low_red": {"value":  0, "unit": "0-255", "type":  "int"},
+    "low_red": {"value":  127, "unit": "0-255", "type":  "int"},
     "low_green": {"value":  0, "unit": "0-255", "type":  "int"},
     "low_blue": {"value":  0, "unit": "0-255", "type":  "int"},
-    "high_red": {"value":  255, "unit": "0-255", "type":  "int"},
+    "high_red": {"value":  180, "unit": "0-255", "type":  "int"},
     "high_green": {"value":  255, "unit": "0-255", "type":  "int"},
     "high_blue": {"value":  255, "unit": "0-255", "type":  "int"}
   }
